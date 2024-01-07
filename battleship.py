@@ -1,5 +1,6 @@
-# Laivanupotus 10 * 10 kartalla
-# Sääntöinä LLLL, 2 * LLL, 3 * LL, 4 * L
+'''Python script game for traditional "Battleship" '''
+# Version 1.0
+
 from random import randint
 
 SYMBOLS = {
@@ -15,13 +16,13 @@ SYMBOLS = {
             }
 
 class Player():
+    ''' A Class describing a human player'''  
     def __init__(self):
         # _display is a private variable for just displaying the game
         self._display = [[SYMBOLS["sea"] for i in range(10)] for j in range(10)]
         # _boats is the private variable for holding the remaining boats. Needs to be separate from display
         self._boats = [[SYMBOLS["sea"] for i in range(10)] for j in range(10)]
-        self.get_starting_positions()
-
+        self.get_automatic_starting_positions()
 
     def display_map(self):
         print("   ABCDEFGHIJ")
@@ -35,6 +36,7 @@ class Player():
 
     @classmethod
     def _get_coords(cls, prompt):
+        '''A helper class method to validate coordinate input'''
         while True:
             coords = input(prompt)
             try:
@@ -52,8 +54,8 @@ class Player():
             break
         return x, y
 
-
     def get_starting_positions(self):
+        '''Get starting positions for ships'''
         ship_names = { 4 : "Carrier", 3 : "Cruiser", 2 : "Destroyer", 1 : "Submarine" }
         print()
         print("The starting coordinates for ships. Give coordinates to the upper, or left margin of the ship.")
@@ -100,47 +102,8 @@ class Player():
                                 continue
                     break
 
-    def bomb(self, another_player : "Player"):
-        print("")
-        x, y = Player._get_coords("Give coordinates for bombing (X Y): ")
-        if another_player._boats[y][x] in range(4)+1:
-            print("A HIT! ", another_player._boats[y][x], " was hit")
-            self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
-            another_player._display[y][x] = SYMBOLS["destroyed_target"]
-        else:
-            print("A miss.")
-            self._display[y][x] = SYMBOLS["miss"]
-    
-    def dead(self):
-        return not any(num in [1, 2, 3, 4] for row in self._boats for num in row)
-
-
-class ComputerPlayer(Player):
-    def __init__(self):
-        super().__init__()
-        self._hits = [] # tuple (y, x)
-
-    def bomb(self, another_player : Player):
-        print()
-        print("Computer is bombing")
-        # Check if there are hits to bomb more
-        
-        while True:
-            x, y = randint(0, 9), randint(0, 9)
-            if self._display[y][x] in [SYMBOLS["miss"], SYMBOLS["hit"]]:
-                continue
-            else:
-                if another_player._boats[y][x] in [x+1 for x in range(4)]:
-                    print("Computer HITS! target: ", another_player._boats[y][x])
-                    self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
-                    another_player._display[y][x] = SYMBOLS["destroyed_target"]
-                    self._hits.append((y, x))
-                else:
-                    print("Computer missed.")
-                    self._display[y][x] = SYMBOLS["miss"]
-                break
-
-    def get_starting_positions(self):
+    def get_automatic_starting_positions(self):
+        ''' A copy from computer players random starting positions to speed up testing process'''
         for ship_size in range(1, 5):
             for n in range(5 - ship_size, 0, -1):
                 while True:
@@ -159,7 +122,7 @@ class ComputerPlayer(Player):
                             for i in range(ship_size):
                                 self._boats[starting_y][starting_x + i] = ship_size
                                 self._display[starting_y][starting_x + i] = SYMBOLS['target']
-                            break  # Exit the while loop when ship placement is successful
+                            break 
                         else:
                             continue
                     else:
@@ -173,22 +136,145 @@ class ComputerPlayer(Player):
                             break
                         else:
                             continue
-       
 
-
-cp1 = ComputerPlayer()
-cp2 = ComputerPlayer()
-round = 1
-while cp1.dead() == False and cp2.dead() == False:
-    print(f"round {round}:")
-    if round % 10 == 0:
-        cp1.display_map()
-    cp1.bomb(cp2)
-    cp2.bomb(cp1)
-    round += 1
+    def bomb(self, another_player : "Player"):
+        '''a human player bombs another player'''
+        print("")
+        x, y = Player._get_coords("Give coordinates for bombing (X Y): ")
+        if another_player._boats[y][x] in [x+1 for x in range(4)]:
+            print(f"A HIT! A {list(SYMBOLS.keys())[list(SYMBOLS.values()).index(another_player._boats[y][x])]} was hit")
+            self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
+            another_player._display[y][x] = SYMBOLS["destroyed_target"]
+        else:
+            print("A miss.")
+            self._display[y][x] = SYMBOLS["miss"]
     
+    def dead(self):
+        return not any(num in [1, 2, 3, 4] for row in self._boats for num in row)
 
-if cp1.dead():
-    print("computer 1 won")
-else:
-    print("computer 2 won")
+
+class ComputerPlayer(Player):
+    '''a class for computer players, inherits player class'''
+    def __init__(self):
+        super().__init__()
+        self._hits = [] # tuple (y, x)
+
+    def _check_bombing(self, another_player, x, y):
+        if another_player._boats[y][x] in [x+1 for x in range(4)]:
+            print(f"Computer HITS a target! A {list(SYMBOLS.keys())[list(SYMBOLS.values()).index(another_player._boats[y][x])]} was hit")
+            if another_player._boats[y][x] in [x+2 for x in range(3)]: # if not submarine, add to hits
+                self._hits.append((y, x))
+            self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
+            another_player._display[y][x] = SYMBOLS["destroyed_target"]
+            self._hits.append((y, x))
+        else:
+            print("Computer missed.")
+            self._display[y][x] = SYMBOLS["miss"]
+
+    def bomb(self, another_player : Player):
+        '''computer player bombs another player, overrides superclass method'''
+        print()
+        print("Computer is bombing")
+        # "Target mode", if previous hits warrant bombing adjacent coords
+        for x, y in self._hits:
+            for x_offset in range(-1, 2, 2):
+                if x + x_offset in range(10):
+                    if self._display[y][x + x_offset] not in [SYMBOLS["miss"], SYMBOLS["hit"]]:
+                        self._check_bombing(another_player, x + x_offset, y)
+                        return
+            for y_offset in range(-1, 2, 2):
+                if y + y_offset in range(10):
+                    if self._display[y + y_offset][x] not in [SYMBOLS["miss"], SYMBOLS["hit"]]:
+                        self._check_bombing(another_player, x, y + y_offset)
+                        return     
+        # Hunting mode, just random bombing
+        while True:
+            x, y = randint(0, 9), randint(0, 9)
+            if self._display[y][x] in [SYMBOLS["miss"], SYMBOLS["hit"]]:
+                continue
+            else:
+                self._check_bombing(another_player, x, y)
+                return 
+
+    def get_starting_positions(self):
+        '''computer player gets random starting positions, overrides superclass method'''
+        for ship_size in range(1, 5):
+            for n in range(5 - ship_size, 0, -1):
+                while True:
+                    go_horizontal = bool(randint(0, 1))
+                    if go_horizontal:
+                        starting_x = randint(0, 9 - ship_size)
+                        starting_y = randint(0, 9)
+                    else:
+                        starting_x = randint(0, 9)
+                        starting_y = randint(0, 9 - ship_size)
+                    if go_horizontal:
+                        cur_map_space = []
+                        for i in range(ship_size):
+                            cur_map_space.append(self._boats[starting_y][starting_x + i])
+                        if all(num + 1 not in cur_map_space for num in range(4)):
+                            for i in range(ship_size):
+                                self._boats[starting_y][starting_x + i] = ship_size
+                                self._display[starting_y][starting_x + i] = SYMBOLS['target']
+                            break 
+                        else:
+                            continue
+                    else:
+                        cur_map_space = []
+                        for i in range(ship_size):
+                            cur_map_space.append(self._boats[starting_y + i][starting_x])
+                        if all(num + 1 not in cur_map_space for num in range(4)):
+                            for i in range(ship_size):
+                                self._boats[starting_y + i][starting_x] = ship_size
+                                self._display[starting_y + i][starting_x] = SYMBOLS['target']
+                            break
+                        else:
+                            continue
+
+def test_computer_players(number):
+    '''Runs a <number> amount of computer vs computer games and prints average rounds'''
+    round_list = []
+    cp1_won = 0
+    cp2_won = 0
+    for i in range(number):
+        cp1 = ComputerPlayer()
+        cp2 = ComputerPlayer()
+        round = 1
+        while cp1.dead() == False and cp2.dead() == False:
+            cp1.bomb(cp2)
+            cp2.bomb(cp1)
+            round += 1
+            # if round % 30 == 0:
+            #     print("round: ", round)
+            #     cp1.display_map()
+            #     input("Press enter to continue...")
+        round_list.append(round)
+        if cp1.dead():
+            cp1_won += 1
+        elif cp2.dead():
+            cp2_won += 1
+    print(f"The number of test games {number}, in which computer player 1 won {cp1_won} and computer player 2 {cp2_won}.")
+    print(f"The average number of rounds was {sum(round_list)/number}")
+
+
+if __name__ == "__main__":
+    print("Welcome to classic Battleship game!")
+    print()
+    human_player = Player()
+    computer_player = ComputerPlayer()
+    while True:
+        human_player.display_map()
+        human_player.bomb(computer_player)
+        computer_player.bomb(human_player)
+        print()
+        if human_player.dead():
+            print("Human player LOST and computer won.")
+            break
+        elif computer_player.dead():
+            print("Human player WON and computer lost. Congratulations!")
+            break
+    print()
+    print("Thank you for playing.")
+        
+
+
