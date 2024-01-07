@@ -50,22 +50,22 @@ class Player():
 
 
     def get_starting_positions(self):
-        ship_names = { 4 : "Lentotukialus", 3 : "Risteilijä", 2 : "Hävittäjä", 1 : "Sukellusvene" }
+        ship_names = { 4 : "Carrier", 3 : "Cruiser", 2 : "Destroyer", 1 : "Submarine" }
         print()
-        print("Laivojen aloituskoordinaatit. Anna koordinaateiksi laivan vasen- tai ylänurkka.")
+        print("The starting coordinates for ships. Give coordinates to the upper, or left margin of the ship.")
         for ship_size in range(5,0, -1):
             for ship_number in range(5-ship_size, 0, -1):
                 print()
                 self.display_map()
                 while True:
-                    x, y = Player._get_coords(f"Anna koordinaatit ({6-ship_size-ship_number}. {ship_names[ship_size]}) (x y): ")
+                    x, y = Player._get_coords(f"Give coordinates ({6-ship_size-ship_number}. {ship_names[ship_size]}) (x y): ")
                     if ship_size > 1:
-                        go_horizontal = input("Laitetaanko laiva poikittain? (K/E): ").upper() == "K"
+                        go_horizontal = input("Place ship horizontally? (Y/N): ").upper() == "Y"
                     else:
                         go_horizontal = True
                     if go_horizontal:
                         if x < 0 or x + ship_size > 10 or y < 0 or y > 9:
-                            print("Invalidit koordinaatit!")
+                            print("Invalid coordinates!")
                             continue
                         else:
                             cur_map_space = []
@@ -76,11 +76,11 @@ class Player():
                                     self._boats[y][x+i] = SYMBOLS['target']
                                     self._display[y][x+i] = SYMBOLS['target']
                             else:
-                                print("Invalidit koordinaatit!")
+                                print("Invalid coordinates!")
                                 continue
                     else:
                         if x < 0 or x > 9 or y < 0 or y + ship_size > 10:
-                            print("Invalidit koordinaatit!")
+                            print("Invalid coordinates!")
                             continue
                         else:
                             cur_map_space = []
@@ -92,19 +92,19 @@ class Player():
                                     self._boats[y+i][x] = SYMBOLS['target']
                                     self._display[y+i][x] = SYMBOLS['target']
                             else:
-                                print("Invalidit koordinaatit!")
+                                print("Invalid coordinates!")
                                 continue
                     break
 
     def bomb(self, another_player : "Player"):
         print("")
-        x, y = Player._get_coords("Anna pommituksen koordinaatit: ")
+        x, y = Player._get_coords("Give coordinates for bombing (X Y): ")
         if another_player._boats[y][x] == SYMBOLS["target"]:
-            print("OSUI!")
+            print("A HIT!")
             self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
             another_player._display[y][x] = SYMBOLS["destroyed_target"]
         else:
-            print("ei osunut")
+            print("A miss.")
             self._display[y][x] = SYMBOLS["miss"]
     
     def dead(self):
@@ -120,18 +120,18 @@ class ComputerPlayer(Player):
 
     def bomb(self, another_player : Player):
         print()
-        print("Tietokone pommittaa...")
+        print("Computer is bombing")
         while True:
             x, y = randint(0, 9), randint(0, 9)
             if self._display[y][x] in [SYMBOLS["miss"], SYMBOLS["hit"]]:
                 continue
             else:
                 if another_player._boats[y][x] == SYMBOLS["target"]:
-                    print("Tietokone OSUI!")
+                    print("Computer HITS!")
                     self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
                     another_player._display[y][x] = SYMBOLS["destroyed_target"]
                 else:
-                    print("Tietokone ei osunut.")
+                    print("Computer missed.")
                     self._display[y][x] = SYMBOLS["miss"]
                 break
 
