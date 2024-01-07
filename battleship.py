@@ -4,10 +4,14 @@ from random import randint
 
 SYMBOLS = {
             "sea" : ".",
-            "target" : "L",
             "hit" : "X",
             "miss" : "O",
-            "destroyed_target" : "~"
+            "destroyed_target" : "~",
+            "target" : "L",
+            "carrier" : 4,
+            "cruiser" : 3,
+            "destroyer" : 2,
+            "submarine" : 1
             }
 
 class Player():
@@ -71,9 +75,9 @@ class Player():
                             cur_map_space = []
                             for i in range(ship_size):
                                 cur_map_space.append(self._boats[y][x+i])
-                            if SYMBOLS['target'] not in cur_map_space:
+                            if any(range(4)+1) not in cur_map_space:
                                 for i in range(ship_size):
-                                    self._boats[y][x+i] = SYMBOLS['target']
+                                    self._boats[y][x+i] = ship_size
                                     self._display[y][x+i] = SYMBOLS['target']
                             else:
                                 print("Invalid coordinates!")
@@ -86,10 +90,10 @@ class Player():
                             cur_map_space = []
                             for i in range(ship_size):
                                 cur_map_space.append(self._boats[y+i][x])
-                            if SYMBOLS['target'] not in cur_map_space:
+                            if any(range(4)+1) not in cur_map_space:
                                 print(SYMBOLS['target'], " not in ", cur_map_space)
                                 for i in range(ship_size):
-                                    self._boats[y+i][x] = SYMBOLS['target']
+                                    self._boats[y+i][x] = ship_size
                                     self._display[y+i][x] = SYMBOLS['target']
                             else:
                                 print("Invalid coordinates!")
@@ -99,8 +103,8 @@ class Player():
     def bomb(self, another_player : "Player"):
         print("")
         x, y = Player._get_coords("Give coordinates for bombing (X Y): ")
-        if another_player._boats[y][x] == SYMBOLS["target"]:
-            print("A HIT!")
+        if another_player._boats[y][x] in range(4)+1:
+            print("A HIT! ", another_player._boats[y][x], " was hit")
             self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
             another_player._display[y][x] = SYMBOLS["destroyed_target"]
         else:
@@ -108,10 +112,7 @@ class Player():
             self._display[y][x] = SYMBOLS["miss"]
     
     def dead(self):
-        if any(SYMBOLS['target'] in row for row in self._boats):
-            return False
-        else:
-            return True
+        return not any(num in [1, 2, 3, 4] for row in self._boats for num in row)
 
 
 class ComputerPlayer(Player):
@@ -126,8 +127,8 @@ class ComputerPlayer(Player):
             if self._display[y][x] in [SYMBOLS["miss"], SYMBOLS["hit"]]:
                 continue
             else:
-                if another_player._boats[y][x] == SYMBOLS["target"]:
-                    print("Computer HITS!")
+                if another_player._boats[y][x] in [x+1 for x in range(4)]:
+                    print("Computer HITS! target: ", another_player._boats[y][x])
                     self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
                     another_player._display[y][x] = SYMBOLS["destroyed_target"]
                 else:
@@ -139,11 +140,7 @@ class ComputerPlayer(Player):
         # Carrier
         x, y = randint(0, 4), randint(0,9)
         for i in range(4):
-            self._boats[y][x+i] = self._display[y][x+i] = SYMBOLS["target"]
-        
-
-        
-
+            self._boats[y][x+i] = self._display[y][x+i] = 4
 
 cp1 = ComputerPlayer()
 cp2 = ComputerPlayer()
