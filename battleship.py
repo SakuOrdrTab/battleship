@@ -24,11 +24,11 @@ class Player():
 
 
     def display_map(self):
-        print("  ABCDEFGHIJ")
+        print("   ABCDEFGHIJ")
         rowcount = 0
         for row in self._display:
             rowcount += 1
-            print(f"{rowcount:2}", end="")
+            print(f"{rowcount:2} ", end="")
             for item in row:
                 print(item, end="")
             print()
@@ -47,7 +47,7 @@ class Player():
                     x = int(x) - 1
                 y = int(items[1]) - 1
             except Exception:
-                print("Invalidit koordinaatit!")
+                print("Invalid coordinates!")
                 continue
             break
         return x, y
@@ -75,7 +75,7 @@ class Player():
                             cur_map_space = []
                             for i in range(ship_size):
                                 cur_map_space.append(self._boats[y][x+i])
-                            if any(range(4)+1) not in cur_map_space:
+                            if any(num + 1 not in cur_map_space for num in range(4)):
                                 for i in range(ship_size):
                                     self._boats[y][x+i] = ship_size
                                     self._display[y][x+i] = SYMBOLS['target']
@@ -90,7 +90,7 @@ class Player():
                             cur_map_space = []
                             for i in range(ship_size):
                                 cur_map_space.append(self._boats[y+i][x])
-                            if any(range(4)+1) not in cur_map_space:
+                            if any(num + 1 not in cur_map_space for num in range(4)):
                                 print(SYMBOLS['target'], " not in ", cur_map_space)
                                 for i in range(ship_size):
                                     self._boats[y+i][x] = ship_size
@@ -118,10 +118,13 @@ class Player():
 class ComputerPlayer(Player):
     def __init__(self):
         super().__init__()
+        self._hits = [] # tuple (y, x)
 
     def bomb(self, another_player : Player):
         print()
         print("Computer is bombing")
+        # Check if there are hits to bomb more
+        
         while True:
             x, y = randint(0, 9), randint(0, 9)
             if self._display[y][x] in [SYMBOLS["miss"], SYMBOLS["hit"]]:
@@ -131,22 +134,55 @@ class ComputerPlayer(Player):
                     print("Computer HITS! target: ", another_player._boats[y][x])
                     self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
                     another_player._display[y][x] = SYMBOLS["destroyed_target"]
+                    self._hits.append((y, x))
                 else:
                     print("Computer missed.")
                     self._display[y][x] = SYMBOLS["miss"]
                 break
 
     def get_starting_positions(self):
-        # Carrier
-        x, y = randint(0, 4), randint(0,9)
-        for i in range(4):
-            self._boats[y][x+i] = self._display[y][x+i] = 4
+        for ship_size in range(1, 5):
+            for n in range(5 - ship_size, 0, -1):
+                while True:
+                    go_horizontal = bool(randint(0, 1))
+                    if go_horizontal:
+                        starting_x = randint(0, 9 - ship_size)
+                        starting_y = randint(0, 9)
+                    else:
+                        starting_x = randint(0, 9)
+                        starting_y = randint(0, 9 - ship_size)
+                    if go_horizontal:
+                        cur_map_space = []
+                        for i in range(ship_size):
+                            cur_map_space.append(self._boats[starting_y][starting_x + i])
+                        if all(num + 1 not in cur_map_space for num in range(4)):
+                            for i in range(ship_size):
+                                self._boats[starting_y][starting_x + i] = ship_size
+                                self._display[starting_y][starting_x + i] = SYMBOLS['target']
+                            break  # Exit the while loop when ship placement is successful
+                        else:
+                            continue
+                    else:
+                        cur_map_space = []
+                        for i in range(ship_size):
+                            cur_map_space.append(self._boats[starting_y + i][starting_x])
+                        if all(num + 1 not in cur_map_space for num in range(4)):
+                            for i in range(ship_size):
+                                self._boats[starting_y + i][starting_x] = ship_size
+                                self._display[starting_y + i][starting_x] = SYMBOLS['target']
+                            break
+                        else:
+                            continue
+       
+
 
 cp1 = ComputerPlayer()
 cp2 = ComputerPlayer()
 round = 1
 while cp1.dead() == False and cp2.dead() == False:
     print(f"round {round}:")
+    if round % 10 == 0:
+        cp1.display_map()
     cp1.bomb(cp2)
     cp2.bomb(cp1)
     round += 1
