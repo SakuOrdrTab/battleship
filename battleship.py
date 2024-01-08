@@ -1,5 +1,5 @@
 '''Python script game for traditional "Battleship" '''
-# Version 1.0
+# Version 1.1
 
 from random import randint
 
@@ -15,16 +15,18 @@ SYMBOLS = {
             "submarine" : 1
             }
 
+
 class Player():
     ''' A Class describing a human player'''  
-    def __init__(self):
+    def __init__(self) -> None:
         # _display is a private variable for just displaying the game
         self._display = [[SYMBOLS["sea"] for i in range(10)] for j in range(10)]
         # _boats is the private variable for holding the remaining boats. Needs to be separate from display
         self._boats = [[SYMBOLS["sea"] for i in range(10)] for j in range(10)]
+        # self.get_starting_positions
         self.get_automatic_starting_positions()
 
-    def display_map(self):
+    def display_map(self) -> None:
         print("   ABCDEFGHIJ")
         rowcount = 0
         for row in self._display:
@@ -35,7 +37,7 @@ class Player():
             print()
 
     @classmethod
-    def _get_coords(cls, prompt):
+    def _get_coords(cls, prompt : str) -> tuple:
         '''A helper class method to validate coordinate input'''
         while True:
             coords = input(prompt)
@@ -53,8 +55,8 @@ class Player():
                 continue
             break
         return x, y
-
-    def get_starting_positions(self):
+    
+    def get_starting_positions(self) -> None:
         '''Get starting positions for ships'''
         ship_names = { 4 : "Carrier", 3 : "Cruiser", 2 : "Destroyer", 1 : "Submarine" }
         print()
@@ -102,7 +104,7 @@ class Player():
                                 continue
                     break
 
-    def get_automatic_starting_positions(self):
+    def get_automatic_starting_positions(self) -> None:
         ''' A copy from computer players random starting positions to speed up testing process'''
         for ship_size in range(1, 5):
             for n in range(5 - ship_size, 0, -1):
@@ -137,21 +139,80 @@ class Player():
                         else:
                             continue
 
-    def bomb(self, another_player : "Player"):
+    def bomb(self, another_player : "Player") -> None:
         '''a human player bombs another player'''
         print("")
         x, y = Player._get_coords("Give coordinates for bombing (X Y): ")
         if another_player._boats[y][x] in [x+1 for x in range(4)]:
             print(f"A HIT! A {list(SYMBOLS.keys())[list(SYMBOLS.values()).index(another_player._boats[y][x])]} was hit")
-            self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
+            self._display[y][x] = SYMBOLS["hit"]
+            another_player._boats[y][x] += 10
             another_player._display[y][x] = SYMBOLS["destroyed_target"]
+            if self.is_sunk(another_player, x, y, another_player._boats[y][x]-10):
+                print(f"A {list(SYMBOLS.keys())[list(SYMBOLS.values()).index(another_player._boats[y][x]-10)]} was SUNK!")
         else:
             print("A miss.")
             self._display[y][x] = SYMBOLS["miss"]
     
-    def dead(self):
-        return not any(num in [1, 2, 3, 4] for row in self._boats for num in row)
+    def is_sunk(self, another_player : "Player", x : int, y : int, ship_type = int):
+        '''Method checks whether a ship was sunk. Not completely foolproof for all ship placements!'''
+        if ship_type == 1:
+            return True # A submarine is of course sunk
+        else:
+            # a helper func
+            def shrink(subject : list, to_keep : int) -> list:
+                if subject == []:
+                    return []
+                elif len(subject) == 1:
+                    return subject[0] if subject[0] in [to_keep, to_keep + 10] else []
+                else:
+                    if subject[0] not in [to_keep, to_keep + 10]:
+                        return shrink(subject[1:], to_keep)
+                    elif subject[-1] not in [to_keep, to_keep + 10]:
+                        return shrink(subject[:-1], to_keep)
+                    else:
+                        return subject
+            # test horizontal first, take corresponding row
+            test_row = another_player._boats[y].copy()
+            # maximum needed list to test is x +/- ship length
+            max_test_list = [test_row[_y] for _y in range(x - ship_type + 1, x + ship_type) if _y >= 0 and _y < 10]
+            # shrink 
+            to_test = shrink(max_test_list, ship_type)
+            # go through the list if size > ship_type
+            if type(to_test) == list:
+                max_sunk = 0
+                curr_sunk = 0
+                for item in to_test:
+                    if type(item) == int:
+                        if item == ship_type + 10:
+                            curr_sunk += 1
+                    else:
+                        curr_sunk = 0
+                    if curr_sunk > max_sunk:
+                        max_sunk = curr_sunk
+                if max_sunk >= ship_type:
+                    return True
+            # test column
+            test_column = [another_player._boats[x][s] for s in range(10)] # a new list, not a ref
+            to_test = shrink([test_row[_x] for _x in range(y - ship_type + 1, y + ship_type) if _x >= 0 and _x < 10], ship_type)
+            if type(to_test) == list:
+                max_sunk = 0
+                curr_sunk = 0
+                for item in to_test:
+                    if type(item) == int:
+                        if item == ship_type + 10:
+                            curr_sunk += 1
+                    else:
+                        curr_sunk = 0
+                    if curr_sunk > max_sunk:
+                        max_sunk = curr_sunk
+                if max_sunk >= ship_type:
+                    return True
+            return False
 
+    def dead(self) -> bool:
+        '''Return True if the player has no ships left'''
+        return not any(num in [1, 2, 3, 4] for row in self._boats for num in row)
 
 class ComputerPlayer(Player):
     '''a class for computer players, inherits player class'''
@@ -159,19 +220,21 @@ class ComputerPlayer(Player):
         super().__init__()
         self._hits = [] # tuple (y, x)
 
-    def _check_bombing(self, another_player, x, y):
+    def _check_bombing(self, another_player : Player, x : int, y : int) -> None:
         if another_player._boats[y][x] in [x+1 for x in range(4)]:
             print(f"Computer HITS a target! A {list(SYMBOLS.keys())[list(SYMBOLS.values()).index(another_player._boats[y][x])]} was hit")
             if another_player._boats[y][x] in [x+2 for x in range(3)]: # if not submarine, add to hits
                 self._hits.append((y, x))
-            self._display[y][x] = another_player._boats[y][x] = SYMBOLS["hit"]
+            self._display[y][x] = SYMBOLS["hit"]
+            another_player._boats[y][x] += 10
             another_player._display[y][x] = SYMBOLS["destroyed_target"]
-            self._hits.append((y, x))
+            if self.is_sunk(another_player, x, y, another_player._boats[y][x]-10):
+                print(f"A {list(SYMBOLS.keys())[list(SYMBOLS.values()).index(another_player._boats[y][x]-10)]} was SUNK!")
         else:
             print("Computer missed.")
             self._display[y][x] = SYMBOLS["miss"]
 
-    def bomb(self, another_player : Player):
+    def bomb(self, another_player : Player) -> None:
         '''computer player bombs another player, overrides superclass method'''
         print()
         print("Computer is bombing")
@@ -196,7 +259,7 @@ class ComputerPlayer(Player):
                 self._check_bombing(another_player, x, y)
                 return 
 
-    def get_starting_positions(self):
+    def get_starting_positions(self) -> None:
         '''computer player gets random starting positions, overrides superclass method'''
         for ship_size in range(1, 5):
             for n in range(5 - ship_size, 0, -1):
@@ -231,7 +294,8 @@ class ComputerPlayer(Player):
                         else:
                             continue
 
-def test_computer_players(number):
+
+def test_computer_players(number : int) -> None:
     '''Runs a <number> amount of computer vs computer games and prints average rounds'''
     round_list = []
     cp1_won = 0
@@ -244,10 +308,6 @@ def test_computer_players(number):
             cp1.bomb(cp2)
             cp2.bomb(cp1)
             round += 1
-            # if round % 30 == 0:
-            #     print("round: ", round)
-            #     cp1.display_map()
-            #     input("Press enter to continue...")
         round_list.append(round)
         if cp1.dead():
             cp1_won += 1
@@ -258,6 +318,7 @@ def test_computer_players(number):
 
 
 if __name__ == "__main__":
+    # test_computer_players(100)
     print("Welcome to classic Battleship game!")
     print()
     human_player = Player()
@@ -275,6 +336,3 @@ if __name__ == "__main__":
             break
     print()
     print("Thank you for playing.")
-        
-
-
