@@ -44,11 +44,14 @@ class Player():
                 items = coords.split(" ")
                 x = items[0]
                 coord_alphabet = "ABCDEFGHIJabcdefghij"
+                # true matrix is 0..9, player gives coords as 1..10
                 if x in coord_alphabet:
                     x = coord_alphabet.find(x.upper())
                 else:
                     x = int(x) - 1
                 y = int(items[1]) - 1
+                if x < 0 or x > 9 or y < 0 or y > 9:
+                    raise ValueError
             except Exception:
                 print("Invalid coordinates!")
                 continue
