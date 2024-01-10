@@ -194,7 +194,7 @@ class Player():
                     return True
             # test column
             test_column = [another_player._boats[x][s] for s in range(10)] # a new list, not a ref
-            to_test = shrink([test_row[_x] for _x in range(y - ship_type + 1, y + ship_type) if _x >= 0 and _x < 10], ship_type)
+            to_test = shrink([test_column[_x] for _x in range(y - ship_type + 1, y + ship_type) if _x >= 0 and _x < 10], ship_type)
             if type(to_test) == list:
                 max_sunk = 0
                 curr_sunk = 0
@@ -239,7 +239,7 @@ class ComputerPlayer(Player):
         print()
         print("Computer is bombing")
         # "Target mode", if previous hits warrant bombing adjacent coords
-        for x, y in self._hits:
+        for y, x in self._hits:
             for x_offset in range(-1, 2, 2):
                 if x + x_offset in range(10):
                     if self._display[y][x + x_offset] not in [SYMBOLS["miss"], SYMBOLS["hit"]]:
