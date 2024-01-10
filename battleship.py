@@ -15,7 +15,6 @@ SYMBOLS = {
             "submarine" : 1
             }
 
-
 class Player():
     ''' A Class describing a human player'''  
     def __init__(self) -> None:
@@ -28,10 +27,10 @@ class Player():
 
     def display_map(self) -> None:
         print("   ABCDEFGHIJ")
-        rowcount = 0
+        row_count = 0
         for row in self._display:
-            rowcount += 1
-            print(f"{rowcount:2} ", end="")
+            row_count += 1
+            print(f"{row_count:2} ", end="")
             for item in row:
                 print(item, end="")
             print()
@@ -261,8 +260,8 @@ class ComputerPlayer(Player):
 
     def get_starting_positions(self) -> None:
         '''computer player gets random starting positions, overrides superclass method'''
-        for ship_size in range(1, 5):
-            for n in range(5 - ship_size, 0, -1):
+        for ship_size in range(1, 5): 
+            for n in range(5 - ship_size, 0, -1): 
                 while True:
                     go_horizontal = bool(randint(0, 1))
                     if go_horizontal:
@@ -296,10 +295,9 @@ class ComputerPlayer(Player):
 
 
 def test_computer_players(number : int) -> None:
-    '''Runs a <number> amount of computer vs computer games and prints average rounds'''
+    '''Runs a <number> amount of computer vs computer games and prints some info'''
     round_list = []
-    cp1_won = 0
-    cp2_won = 0
+    cp1_won = cp2_won = 0
     for i in range(number):
         cp1 = ComputerPlayer()
         cp2 = ComputerPlayer()
@@ -313,14 +311,17 @@ def test_computer_players(number : int) -> None:
             cp1_won += 1
         elif cp2.dead():
             cp2_won += 1
-    print(f"The number of test games {number}, in which computer player 1 won {cp1_won} and computer player 2 {cp2_won}.")
+    print(f"The number of test games {number}, in which computer_player_1 won {cp1_won} and computer_player_2 {cp2_won}.")
     print(f"The average number of rounds was {sum(round_list)/number}")
+    print(f"the maximum number of rounds was {max(round_list)} and minimum {min(round_list)}.")
 
 
 if __name__ == "__main__":
-    # test_computer_players(100)
     print("Welcome to classic Battleship game!")
     print()
+    
+    # test_computer_players(100)
+    
     human_player = Player()
     computer_player = ComputerPlayer()
     while True:
