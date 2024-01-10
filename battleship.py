@@ -195,7 +195,7 @@ class Player():
                 if max_sunk >= ship_type:
                     return True
             # test column
-            test_column = [another_player._boats[x][s] for s in range(10)] # a new list, not a ref
+            test_column = [another_player._boats[s][x] for s in range(10)] # a new list, not a ref
             to_test = shrink([test_column[_x] for _x in range(y - ship_type + 1, y + ship_type) if _x >= 0 and _x < 10], ship_type)
             if type(to_test) == list:
                 max_sunk = 0
