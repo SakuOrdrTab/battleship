@@ -22,8 +22,8 @@ class Player():
         self._display = [[SYMBOLS["sea"] for i in range(10)] for j in range(10)]
         # _boats is the private variable for holding the remaining boats. Needs to be separate from display
         self._boats = [[SYMBOLS["sea"] for i in range(10)] for j in range(10)]
-        # self.get_starting_positions
-        self.get_automatic_starting_positions()
+        self.get_starting_positions()
+        # self.get_automatic_starting_positions()
 
     def display_map(self) -> None:
         print("   ABCDEFGHIJ")
